@@ -1,0 +1,108 @@
+default:
+  image: python:3.11
+
+  # Install all the requirements in each job by default, unless a job overrides this with
+  # a local before_script directive. This is usually done with linters, which don't need
+  # all the dependencies.
+  before_script:
+    - pip3 install -r requirements/dev.txt
+
+stages:
+  - lint
+  - test
+  - docs
+  - build
+
+########################################################################################
+
+# Check the source code with Black. If black detects any changes, the pipelines fails.
+# https://github.com/psf/black
+black:
+  stage: lint
+  before_script:
+    - pip install black
+  script:
+    - black --check --diff .
+
+# Check the source code with the Ruff linter.
+# https://beta.ruff.rs/docs/
+ruff:
+  stage: lint
+  before_script:
+    - pip install ruff
+  script:
+    - ruff check --format=gitlab src/package > codequality.json
+  artifacts:
+    reports:
+      codequality:
+        - codequality.json
+
+# Check the source code with the PyLint linter.
+pylint:
+  stage: lint
+  before_script:
+    - pip install pylint pylint-gitlab
+  script:
+    - pylint --output-format=pylint_gitlab.GitlabCodeClimateReporter src/package > codequality.json
+  artifacts:
+    reports:
+      codequality:
+        - codequality.json
+
+# Check code typing with MyPy.
+# https://mypy.readthedocs.io/en/stable/
+mypy:
+  stage: lint
+  before_script:
+    - pip install mypy
+    - mkdir .mypy_cache  # Forcing MyPy to overcome some basic issues.
+  script:
+    - mypy --install-types --non-interactive --config-file=pyproject.toml src/package
+
+########################################################################################
+
+tests:
+  stage: test
+  before_script:
+    - pip3 install coverage pytest
+  script:
+    - coverage run -m pytest --junitxml=tests.xml .
+    - coverage xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+      junit: tests.xml
+    paths:
+      - docs/_static/coverage
+
+########################################################################################
+
+pages:
+  stage: docs
+  needs:
+    - job: tests
+      artifacts: true
+  script:
+    - cd docs
+    - make html
+    - cd ..
+    - mv docs/_build/html public/
+  artifacts:
+    paths:
+    - public
+
+########################################################################################
+
+build:
+  stage: build
+  needs:
+    - job: tests
+      artifacts: false
+  script:
+    - pip3 install build twine
+    - python3 -m build
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+  when: manual
+  allow_failure: true
