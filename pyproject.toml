@@ -1,9 +1,6 @@
 [project]
-name = "Project Template"
+name = "recepty"
 version = "1.0.0"
-authors = [
-    { name="FooBar", email="foo@bar.xyz" }
-]
 description = "A template repository for my Python projects."
 readme = "README.md"
 license = { file="LICENSE" }
@@ -94,7 +91,7 @@ max-args = 8
 
 ### Mypy Type Checking #################################################################
 [tool.mypy]
-mypy_path = "src/package"
+mypy_path = "src/recepty"
 
 # Excluding tests
 exclude = "tests|venv"
@@ -115,11 +112,11 @@ warn_unreachable = true
 
 ### PyTest settings ####################################################################
 [tool.pytest.ini_options]
-junit_suite_name = "Template Project Test Suite"
+junit_suite_name = "Recepty Test Suite"
 
 ### Coverage settings ##################################################################
 [tool.coverage.run]
 
 source = [
-    "src/package",
+    "src/recepty",
 ]

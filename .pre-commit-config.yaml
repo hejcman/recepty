@@ -36,7 +36,7 @@ repos:
       - id: ruff
         args: [
           --fix,
-          src/package
+          src/recepty
         ]
 
   # Linting with PyLint.
@@ -60,7 +60,7 @@ repos:
         --non-interactive,
         --install-types,
         --config-file=pyproject.toml,
-        src/package
+        src/recepty
       ]
       pass_filenames: false
       verbose: true
